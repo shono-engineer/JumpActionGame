@@ -300,6 +300,19 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
             }
         }
 
+        // Enemyとの当たり判定
+        // ここで処理しないとアーリーリターンを食らって下からの当たり判定に行かない
+        for (i in 0 until mEnemies.size) {
+            val enemy = mEnemies[i]
+
+            if (mPlayer.boundingRectangle.overlaps(enemy.boundingRectangle)) {
+                // ここに触れた時の処理を書く
+                mSound.play()
+                mPlayer.vanish()
+                mGameState = GAME_STATE_GAMEOVER
+            }
+        }
+
         // Stepとの当たり判定
         // 上昇中はStepとの当たり判定を確認しない
         if (mPlayer.velocity.y > 0) {
@@ -321,18 +334,6 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
                     }
                     break
                 }
-            }
-        }
-
-        // Enemyとの当たり判定
-        for (i in 0 until mEnemies.size) {
-            val enemy = mEnemies[i]
-
-            if (mPlayer.boundingRectangle.overlaps(enemy.boundingRectangle)) {
-                // ここに触れた時の処理を書く
-                mSound.play()
-                mPlayer.vanish()
-                mGameState = GAME_STATE_GAMEOVER
             }
         }
     }
