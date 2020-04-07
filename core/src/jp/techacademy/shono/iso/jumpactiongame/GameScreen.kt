@@ -12,7 +12,9 @@ import com.badlogic.gdx.utils.viewport.FitViewport
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.audio.Sound
 import java.util.*
+import kotlin.collections.ArrayList
 
 class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
     companion object {
@@ -42,6 +44,7 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
     private var mRandom: Random
     private var mSteps: ArrayList<Step>
     private var mStars: ArrayList<Star>
+    private var mEnemies: ArrayList<Enemy>
     private lateinit var mUfo: Ufo
     private lateinit var mPlayer: Player
 
@@ -54,6 +57,8 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
     private var mScore: Int // ←追加する
     private var mHighScore: Int // ←追加する
     private var mPrefs: Preferences // ←追加する
+
+    private  var mSound: Sound
 
 
     init {
@@ -78,6 +83,7 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
         mRandom = Random()
         mSteps = ArrayList<Step>()
         mStars = ArrayList<Star>()
+        mEnemies = ArrayList<Enemy>()
         mGameState = GAME_STATE_READY
         mTouchPoint = Vector3() // ←追加する
 
@@ -89,6 +95,8 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
         // ハイスコアをPreferencesから取得する
         mPrefs = Gdx.app.getPreferences("jp.techacademy.shono.iso.jumpactiongame") // ←追加する
         mHighScore = mPrefs.getInteger("HIGHSCORE", 0) // ←追加する
+
+        mSound = Gdx.audio.newSound(Gdx.files.internal("crash.wav"))
 
         createStage()
     }
@@ -126,6 +134,11 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
             mStars[i].draw(mGame.batch)
         }
 
+        // Enemy
+        for (i in 0 until mEnemies.size) {
+            mEnemies[i].draw(mGame.batch)
+        }
+
         // UFO
         mUfo.draw(mGame.batch)
 
@@ -155,8 +168,10 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
         val starTexture = Texture("star.png")
         val playerTexture = Texture("uma.png")
         val ufoTexture = Texture("ufo.png")
+        val enemyTexture = Texture("enemy.png")
 
         // StepとStarをゴールの高さまで配置していく
+        // 課題で合わせてEnemyも配置
         var y = 0f
 
         val maxJumpHeight = Player.PLAYER_JUMP_VELOCITY * Player.PLAYER_JUMP_VELOCITY / (2 * -GRAVITY)
@@ -172,6 +187,14 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
                 val star = Star(starTexture, 0, 0, 72, 72)
                 star.setPosition(step.getX() + mRandom.nextFloat(), step.getY() + Star.STAR_HEIGHT + mRandom.nextFloat() * 3)
                 mStars.add(star)
+            }
+
+            if (mRandom.nextFloat() > 0.7f) {
+                val enemy = Enemy(enemyTexture, 0, 0, 72, 72)
+                // x座標はstepによらないものとする
+                enemy.setPosition(mRandom.nextFloat() * (WORLD_WIDTH - Enemy.ENEMY_WIDTH), step.getY() + Enemy.ENEMY_HEIGHT + mRandom.nextFloat() * 3)
+                enemy.setDefaultY(enemy.getY())
+                mEnemies.add(enemy)
             }
 
             y += (maxJumpHeight - 0.5f)
@@ -222,6 +245,11 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
         // Step
         for (i in 0 until mSteps.size) {
             mSteps[i].update(delta)
+        }
+
+        // Enemy
+        for (i in 0 until mEnemies.size) {
+            mEnemies[i].update(delta)
         }
 
         // Player
@@ -293,6 +321,18 @@ class GameScreen(private val mGame: JumpActionGame) : ScreenAdapter() {
                     }
                     break
                 }
+            }
+        }
+
+        // Enemyとの当たり判定
+        for (i in 0 until mEnemies.size) {
+            val enemy = mEnemies[i]
+
+            if (mPlayer.boundingRectangle.overlaps(enemy.boundingRectangle)) {
+                // ここに触れた時の処理を書く
+                mSound.play()
+                mPlayer.vanish()
+                mGameState = GAME_STATE_GAMEOVER
             }
         }
     }

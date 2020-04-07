@@ -60,4 +60,8 @@ class Player(texture: Texture, srcX: Int, srcY: Int, srcWidth: Int, srcHeight: I
         mState = PLAYER_STATE_JUMP
     }
 
+    fun vanish() {
+        setAlpha(0f)
+        velocity.x = 0f
+    }
 }
